@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseSplitter.Api", "ExpenseSplitter.Api\ExpenseSplitter.Api.csproj", "{16E417E1-EB8C-4F71-9C21-97AF8D516805}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseSplitter.Web", "ExpenseSplitter.Web\ExpenseSplitter.Web.csproj", "{2F6B2C84-582D-4916-A460-2974AEBF3009}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{16E417E1-EB8C-4F71-9C21-97AF8D516805}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16E417E1-EB8C-4F71-9C21-97AF8D516805}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16E417E1-EB8C-4F71-9C21-97AF8D516805}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16E417E1-EB8C-4F71-9C21-97AF8D516805}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F6B2C84-582D-4916-A460-2974AEBF3009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F6B2C84-582D-4916-A460-2974AEBF3009}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F6B2C84-582D-4916-A460-2974AEBF3009}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F6B2C84-582D-4916-A460-2974AEBF3009}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

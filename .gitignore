@@ -1,0 +1,1 @@
+bin/\nobj/\n.env\n*.user\nappsettings.Development.json\n**/publish/
