@@ -1,1 +1,6 @@
-bin/\nobj/\n.env\n*.user\nappsettings.Development.json\n**/publish/
+bin/
+obj/
+.env
+.user
+appsettings.Development.json
+**/publish/
