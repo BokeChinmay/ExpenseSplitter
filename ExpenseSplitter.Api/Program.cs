@@ -62,6 +62,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddScoped<DebtSimplificationService>();
 builder.Services.AddScoped<ReceiptParsingService>();
+builder.Services.AddScoped<InsightsService>();
 
 //Swagger - Failed (version control issues?)
 // builder.Services.AddEndpointsApiExplorer();

@@ -9,9 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 [Authorize]
 public class GroupsController : ControllerBase {
     private readonly ExpenseService _expenseService;
+    private readonly ReceiptParsingService _receiptService;
+    private readonly InsightsService _insightsService;
 
-    public GroupsController(ExpenseService expenseService) {
+    public GroupsController(ExpenseService expenseService, ReceiptParsingService receiptService, InsightsService insightsService) {
         _expenseService = expenseService;
+        _receiptService = receiptService;
+        _insightsService = insightsService;
     }
 
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -70,6 +74,34 @@ public class GroupsController : ControllerBase {
     public async Task<IActionResult> GetStats(int groupId) {
         var stats = await _expenseService.GetGroupStatsAsync(groupId);
         return Ok(stats);
+    }
+
+    [HttpPost("parse-receipt")]
+    public async Task<IActionResult> ParseReceipt([FromForm] IFormFile file) {
+        if (file == null || file.Length == 0) 
+            return BadRequest("No file provided.");
+        
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
+        if(!allowed.Contains(file.ContentType.ToLower()))
+            return BadRequest("Only image files are supported.");
+
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest("File must be under 5MB.");
+
+        try {
+            using var stream = file.OpenReadStream();
+            var result = await _receiptService.ParseReceiptAsync(stream, file.ContentType);
+            return Ok(result);
+        }
+        catch (Exception ex) {
+            return StatusCode(500, $"Receipt parsing failed: {ex.Message}");
+        }
+    }
+
+    [HttpGet("{groupId}/insights")]
+    public async Task<IActionResult> GetInsights(int groupId) {
+        var insights = await _insightsService.GetInsightsAsync(groupId);
+        return Ok(insights);
     }
 }
 
