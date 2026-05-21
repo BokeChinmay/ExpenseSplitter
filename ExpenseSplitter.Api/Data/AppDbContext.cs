@@ -41,6 +41,7 @@ public class AppDbContext : DbContext {
         modelBuilder.Entity<Expense>()
             .HasOne(e => e.PaidBy)
             .WithMany(u => u.PaidExpenses)
+            .HasForeignKey(e => e.PaidByUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
