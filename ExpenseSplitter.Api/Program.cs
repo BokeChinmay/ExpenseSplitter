@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 //using Microsoft.OpenApi.Models;
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,7 +101,7 @@ builder.Services.AddScoped<InsightsService>();
 // builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options => {
-    options.AddPolicy("BlazorClient", policy => policy.WithOrigins("http://localhost:5211", "http://localhost:5275").AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("BlazorClient", policy => policy.WithOrigins("http://localhost:5211", "http://localhost:5275", "https://bokechinmay.github.io").AllowAnyHeader().AllowAnyMethod());
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -114,6 +115,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 });
 
 var app = builder.Build();
+
+app.Urls.Add($"http://0.0.0.0:{port}");
 
 //Auto migrate on startup
 using (var scope = app.Services.CreateScope()) {
