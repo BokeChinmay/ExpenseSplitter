@@ -1,0 +1,133 @@
+@page "/"
+@attribute [Authorize]
+@inject ApiService Api
+@inject JwtAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<div class="dashboard-wrap">
+    <div class="dashboard-header">
+        <div>
+            <h1>Your Groups</h1>
+            <p class="text-muted">Manage expenses and settle up with your groups.</p>
+        </div>
+        <button class="btn-primary" @onclick="() => { _showCreateGroup = true; StateHasChanged(); }">
+            + New Group (@_showCreateGroup)
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading-state">Loading your groups...</div>
+    }
+    else if (!_groups.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <h3>No groups yet</h3>
+            <p>Create a group to start splitting expenses with friends.</p>
+            <button class="btn-primary" @onclick="() => _showCreateGroup = true">
+                Create your first group
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="groups-grid">
+            @foreach (var group in _groups)
+            {
+                <div class="group-card" @onclick='() => Nav.NavigateTo($"/group/{group.Id}")'>
+                    <div class="group-card-header">
+                        <span class="group-name">@group.Name</span>
+                        <span class="group-currency">@group.Currency</span>
+                    </div>
+                    <div class="group-stats">
+                        <span>@group.Members.Count members</span>
+                        <span>@group.ExpenseCount expenses</span>
+                        <span class="group-total">@group.Currency @group.TotalAmount.ToString("F2")</span>
+                    </div>
+                    <div class="group-members">
+                        @foreach (var member in group.Members.Take(4))
+                        {
+                            <div class="avatar" title="@member.Name">
+                                @member.Name[0]
+                            </div>
+                        }
+                        @if (group.Members.Count > 4)
+                        {
+                            <div class="avatar avatar-more">+@(group.Members.Count - 4)</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (_showCreateGroup)
+{
+    <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);"
+         @onclick='() => _showCreateGroup = false'>
+        <div style="background:#ffffff;border-radius:14px;padding:1.5rem;width:100%;max-width:440px;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:1rem;"
+             @onclick:stopPropagation>
+            <h2 style="font-size:18px;font-weight:600;letter-spacing:-0.02em;color:#1C1A17;">Create Group</h2>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:500;color:#7A7369;">Group Name</label>
+                <input style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"
+                       @bind="_newGroupName" placeholder="Weekend Trip, Apartment, etc." />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:500;color:#7A7369;">Currency</label>
+                <select style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:white;"
+                        @bind="_newGroupCurrency">
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                    <option value="AUD">AUD - Australian Dollar</option>
+                    <option value="INR">INR - Indian Rupee</option>
+                </select>
+            </div>
+            @if (!string.IsNullOrEmpty(_createError))
+            {
+                <div style="background:#FDECEA;color:#C0392B;border:1px solid #f5c6c2;border-radius:8px;padding:10px 14px;font-size:13px;">
+                    @_createError
+                </div>
+            }
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:0.75rem;border-top:1px solid #E2DED7;">
+                <button style="padding:8px 16px;border:1px solid #E2DED7;border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:#7A7369;"
+                        @onclick='() => _showCreateGroup = false'>Cancel</button>
+                <button style="padding:8px 20px;background:#5B4BDB;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;"
+                        @onclick="CreateGroup">Create</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<GroupDto> _groups = new();
+    private bool _loading = true;
+    private bool _showCreateGroup = false;
+    private string _newGroupName = "";
+    private string _newGroupCurrency = "USD";
+    private string _createError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _groups = await Api.GetGroupsAsync();
+        _loading = false;
+    }
+
+    private async Task CreateGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_newGroupName))
+        { _createError = "Group name is required."; return; }
+
+        var group = await Api.CreateGroupAsync(_newGroupName, _newGroupCurrency);
+        if (group == null) { _createError = "Failed to create group."; return; }
+
+        _groups.Add(group);
+        _showCreateGroup = false;
+        _newGroupName = "";
+        _createError = "";
+    }
+}

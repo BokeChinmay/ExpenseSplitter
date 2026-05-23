@@ -100,11 +100,18 @@ builder.Services.AddScoped<InsightsService>();
 // builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options => {
-    options.AddPolicy("BlazorClient", policy => policy.WithOrigins("http://localhost:5211").AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("BlazorClient", policy => policy.WithOrigins("http://localhost:5211", "http://localhost:5275").AllowAnyHeader().AllowAnyMethod());
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = long.MaxValue;
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 var app = builder.Build();
 

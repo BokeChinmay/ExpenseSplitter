@@ -1,0 +1,445 @@
+@page "/group/{GroupId:int}"
+@attribute [Authorize]
+@inject ApiService Api
+@inject JwtAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+
+@if (_group == null)
+{
+    <div class="loading-state">Loading group...</div>
+}
+else
+{
+    <div class="group-detail-wrap">
+        <div class="group-detail-header">
+            <button class="btn-back" @onclick='() => Nav.NavigateTo("/")'>← Back</button>
+            <div>
+                <h1>@_group.Name</h1>
+                <p class="text-muted">@_group.Members.Count members · @_group.Currency @_group.TotalAmount.ToString("F2") total</p>
+            </div>
+            <button class="btn-primary" @onclick="() => _showAddExpense = true">
+                + Add Expense
+            </button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab @(_activeTab == "expenses" ? "active" : "")"
+                @onclick='() => SetActiveTab("expenses")'>Expenses</button>
+            <button class="tab @(_activeTab == "settlements" ? "active" : "")"
+                @onclick='() => SetActiveTabAsync("settlements")'>Settlements</button>
+            <button class="tab @(_activeTab == "members" ? "active" : "")"
+                @onclick='() => SetActiveTab("members")'>Members</button>
+            <button class="tab @(_activeTab == "insights" ? "active" : "")"
+                @onclick='() => SetActiveTabAsync("insights")'>Insights</button>
+        </div>
+
+        @if (_activeTab == "expenses")
+        {
+            <div class="expenses-list">
+                @if (!_expenses.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">🧾</div>
+                        <p>No expenses yet. Add one to get started.</p>
+                    </div>
+                }
+                @foreach (var expense in _expenses)
+                {
+                    <div class="expense-row">
+                        <div class="expense-category-dot cat-@expense.Category.ToLower()"></div>
+                        <div class="expense-info">
+                            <div class="expense-desc">@expense.Description</div>
+                            <div class="expense-meta">
+                                @expense.PaidByName paid · @expense.Category ·
+                                @expense.Date.ToString("MMM d")
+                            </div>
+                        </div>
+                        <div class="expense-amount">@_group.Currency @expense.Amount.ToString("F2")</div>
+                        @if (expense.PaidByUserId == _userId)
+                        {
+                            <button class="btn-delete" @onclick="() => DeleteExpense(expense.Id)">×</button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (_activeTab == "settlements")
+        {
+            <div class="settlements-list">
+                @if (!_settlements.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">✅</div>
+                        <h3>All settled up!</h3>
+                        <p>No outstanding balances in this group.</p>
+                    </div>
+                }
+                @foreach (var s in _settlements)
+                {
+                    <div class="settlement-row">
+                        <div class="settlement-avatar">@s.FromUserName[0]</div>
+                        <div class="settlement-info">
+                            <span class="settlement-from">@s.FromUserName</span>
+                            <span class="settlement-arrow">owes</span>
+                            <span class="settlement-to">@s.ToUserName</span>
+                        </div>
+                        <div class="settlement-amount">
+                            @_group.Currency @s.Amount.ToString("F2")
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (_activeTab == "members")
+        {
+            <div class="members-list">
+                @foreach (var member in _group.Members)
+                {
+                    <div class="member-row">
+                        <div class="avatar">@member.Name[0]</div>
+                        <div>
+                            <div class="member-name">@member.Name</div>
+                            <div class="member-email">@member.Email</div>
+                        </div>
+                    </div>
+                }
+                <div class="add-member-row">
+                    <input @bind="_newMemberEmail" placeholder="Add member by email..." />
+                    <button class="btn-primary" @onclick="AddMember">Add</button>
+                </div>
+                @if (!string.IsNullOrEmpty(_memberError))
+                {
+                    <div class="auth-error">@_memberError</div>
+                }
+            </div>
+        }
+
+        @if (_activeTab == "insights")
+        {
+            @if (_insights == null)
+            {
+                <div class="loading-state">Loading insights...</div>
+            }
+            else
+            {
+                <div class="insights-wrap">
+                    <div class="insights-summary">
+                        <div class="insights-summary-icon">🤖</div>
+                        <p>@_insights.AiSummary</p>
+                    </div>
+                    <div class="insights-grid">
+                        <div class="insights-card">
+                            <h3>By Category</h3>
+                            @foreach (var kvp in _insights.SpendingByCategory)
+                            {
+                                <div class="insights-bar-row">
+                                    <span>@kvp.Key</span>
+                                    <div class="insights-bar">
+                                        <div class="insights-bar-fill"
+                                             style="width: @(GetPercent(kvp.Value, _insights.SpendingByCategory.Values.Max()))%">
+                                        </div>
+                                    </div>
+                                    <span>@_group.Currency @kvp.Value.ToString("F2")</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="insights-card">
+                            <h3>By Member</h3>
+                            @foreach (var kvp in _insights.SpendingByMember)
+                            {
+                                <div class="insights-bar-row">
+                                    <span>@kvp.Key</span>
+                                    <div class="insights-bar">
+                                        <div class="insights-bar-fill"
+                                             style="width: @(GetPercent(kvp.Value, _insights.SpendingByMember.Values.Max()))%">
+                                        </div>
+                                    </div>
+                                    <span>@_group.Currency @kvp.Value.ToString("F2")</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+
+@if (_showAddExpense)
+{
+    <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;"
+         @onclick='() => _showAddExpense = false'>
+        <div style="background:#ffffff;border-radius:14px;padding:1.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:1rem;"
+             @onclick:stopPropagation>
+
+            <h2 style="font-size:18px;font-weight:600;letter-spacing:-0.02em;color:#1C1A17;">Add Expense</h2>
+
+            <div style="margin-bottom:4px;">
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#7A7369;cursor:pointer;padding:8px 16px;border:1.5px dashed #D0CBC2;border-radius:10px;">
+                    📎 @(_parsing ? "Parsing receipt..." : "Upload receipt to auto-fill")
+                    <InputFile OnChange="HandleReceipt" accept="image/*" disabled="@_parsing" style="display:none" />
+                </label>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
+                    <label style="font-size:13px;font-weight:500;color:#7A7369;">Description</label>
+                    <input style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"
+                           @bind="_expDesc" placeholder="Dinner, Uber, Hotel..." />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
+                    <label style="font-size:13px;font-weight:500;color:#7A7369;">Amount</label>
+                    <input style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"
+                           @bind="_expAmount" type="number" step="0.01" placeholder="0.00" />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
+                    <label style="font-size:13px;font-weight:500;color:#7A7369;">Category</label>
+                    <select style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:white;"
+                            @bind="_expCategory">
+                        <option>Food</option>
+                        <option>Transport</option>
+                        <option>Accommodation</option>
+                        <option>Entertainment</option>
+                        <option>Shopping</option>
+                        <option>Utilities</option>
+                        <option>General</option>
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
+                    <label style="font-size:13px;font-weight:500;color:#7A7369;">Date</label>
+                    <input style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;"
+                           @bind="_expDate" type="date" />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
+                    <label style="font-size:13px;font-weight:500;color:#7A7369;">Split Type</label>
+                    <select style="padding:10px 14px;border:1px solid #E2DED7;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:white;"
+                            @bind="_expSplitType">
+                        <option value="0">Equal</option>
+                        <option value="1">Percentage</option>
+                        <option value="2">Custom</option>
+                    </select>
+                    @if (_expSplitType == "1" || _expSplitType == "2")
+                    {
+                        <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:8px;">
+                            <label style="font-size:13px;font-weight:500;color:#7A7369;">
+                                @(_expSplitType == "1" ? "Percentages (must total 100%)" : "Custom amounts")
+                            </label>
+                            @if (_group != null)
+                            {
+                                @foreach (var member in _group.Members)
+                                {
+                                    var memberId = member.UserId;
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <div style="width:28px;height:28px;border-radius:50%;background:#EDEBFF;color:#2D1F8F;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">
+                                            @member.Name[0]
+                                        </div>
+                                        <span style="flex:1;font-size:14px;">@member.Name</span>
+                                        <input style="width:100px;padding:8px 10px;border:1px solid #E2DED7;border-radius:8px;font-size:14px;font-family:inherit;outline:none;text-align:right;"
+                                            type="number" step="0.01" placeholder="@(_expSplitType == "1" ? "%" : "0.00")"
+                                            value="@GetCustomSplitValue(memberId)"
+                                            @onchange="e => SetCustomSplitValue(memberId, e.Value?.ToString())" />
+                                    </div>
+                                }
+                            }
+                            @if (_expSplitType == "1")
+                            {
+                                var total = _customSplitValues.Values.Sum();
+                                <div style="font-size:12px;color:@(Math.Abs(total - 100) < 0.01m ? "#1B7A4A" : "#C0392B");text-align:right;">
+                                    Total: @total.ToString("F1")% @(Math.Abs(total - 100) < 0.01m ? "✓" : "(must equal 100%)")
+                                </div>
+                            }
+                            @if (_expSplitType == "2")
+                            {
+                                var total = _customSplitValues.Values.Sum();
+                                <div style="font-size:12px;color:@(Math.Abs(total - _expAmount) < 0.01m ? "#1B7A4A" : "#C0392B");text-align:right;">
+                                    Total: @total.ToString("F2") / @_expAmount.ToString("F2") @(Math.Abs(total - _expAmount) < 0.01m ? "✓" : $"({(_expAmount - total):F2} remaining)")
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_expError))
+            {
+                <div style="background:#FDECEA;color:#C0392B;border:1px solid #f5c6c2;border-radius:8px;padding:10px 14px;font-size:13px;">
+                    @_expError
+                </div>
+            }
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:0.75rem;border-top:1px solid #E2DED7;">
+                <button style="padding:8px 16px;border:1px solid #E2DED7;border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:#7A7369;"
+                        @onclick='() => { _showAddExpense = false; _customSplitValues = new(); }'>Cancel</button>
+                <button style="padding:8px 20px;background:#5B4BDB;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;"
+                        @onclick="AddExpense" disabled="@_savingExpense">
+                    @(_savingExpense ? "Saving..." : "Add Expense")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int GroupId { get; set; }
+
+    private GroupDto? _group;
+    private List<ExpenseDto> _expenses = new();
+    private List<SettlementSuggestion> _settlements = new();
+    private GroupInsightsDto? _insights;
+    private string _activeTab = "expenses";
+    private int _userId;
+
+    private bool _showAddExpense = false;
+    private string _expDesc = "";
+    private decimal _expAmount = 0;
+    private string _expCategory = "Food";
+    private DateTime _expDate = DateTime.Today;
+    private string _expSplitType = "0";
+    private string _expError = "";
+    private bool _savingExpense = false;
+    private bool _parsing = false;
+    private Dictionary<int, decimal> _customSplitValues = new();
+
+    private string _newMemberEmail = "";
+    private string _memberError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await AuthProvider.GetUserIdAsync();
+        var groups = await Api.GetGroupsAsync();
+        _group = groups.FirstOrDefault(g => g.Id == GroupId);
+        _expenses = await Api.GetExpensesAsync(GroupId);
+    }
+
+    private async Task SetTab(string tab)
+    {
+        _activeTab = tab;
+        if (tab == "settlements")
+            _settlements = await Api.GetSettlementsAsync(GroupId);
+        if (tab == "insights")
+            _insights = await Api.GetInsightsAsync(GroupId);
+    }
+
+    private async Task HandleReceipt(InputFileChangeEventArgs e)
+    {
+        _parsing = true;
+        StateHasChanged();
+
+        try
+        {
+            var file = e.File;
+            using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            var result = await Api.ParseReceiptAsync(stream, file.Name, file.ContentType);
+
+            if (result != null)
+            {
+                _expDesc = result.Description;
+                _expAmount = result.Amount;
+                _expCategory = result.Category;
+                _expDate = result.Date;
+            }
+        }
+        catch { }
+        finally
+        {
+            _parsing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AddExpense()
+    {
+        if (string.IsNullOrWhiteSpace(_expDesc))
+        { _expError = "Description is required."; return; }
+        if (_expAmount <= 0)
+        { _expError = "Amount must be greater than 0."; return; }
+
+        _savingExpense = true;
+        _expError = "";
+
+        List<CustomSplitDto>? customSplits = null;
+
+        if (_expSplitType != "0" && _customSplitValues.Any())
+        {
+            var total = _customSplitValues.Values.Sum();
+
+            if (_expSplitType == "1") // percentage
+            {
+                if (Math.Abs(total - 100) > 0.01m)
+                {
+                    _expError = $"Percentages must total 100%. Current total: {total:F1}%";
+                    _savingExpense = false;
+                    return;
+                }
+            }
+            else if (_expSplitType == "2") // custom
+            {
+                if (Math.Abs(total - _expAmount) > 0.01m)
+                {
+                    _expError = $"Custom amounts must total {_expAmount:F2}. Current total: {total:F2}";
+                    _savingExpense = false;
+                    return;
+                }
+            }
+
+            customSplits = _customSplitValues.Select(kvp => new CustomSplitDto(kvp.Key, kvp.Value)).ToList();
+        }
+
+        var request = new CreateExpenseRequest(_expDesc, _expAmount, _expCategory, int.Parse(_expSplitType), _expDate.ToUniversalTime(), customSplits);
+
+        var expense = await Api.CreateExpenseAsync(GroupId, request);
+        if (expense == null) { _expError = "Failed to add expense."; _savingExpense = false; return; }
+
+        _expenses.Insert(0, expense);
+        _showAddExpense = false;
+        _expDesc = ""; _expAmount = 0; _expCategory = "Food";
+        _expDate = DateTime.Today; _savingExpense = false;
+        _customSplitValues = new();
+
+        var groups = await Api.GetGroupsAsync();
+        _group = groups.FirstOrDefault(g => g.Id == GroupId);
+
+        // Refresh settlements if that tab was active
+        if (_activeTab == "settlements")
+            _settlements = await Api.GetSettlementsAsync(GroupId);
+    }
+
+    private async Task DeleteExpense(int expenseId)
+    {
+        await Api.DeleteExpenseAsync(GroupId, expenseId);
+        _expenses.RemoveAll(e => e.Id == expenseId);
+        var groups = await Api.GetGroupsAsync();
+        _group = groups.FirstOrDefault(g => g.Id == GroupId);
+    }
+
+    private decimal GetCustomSplitValue(int userId) =>
+        _customSplitValues.TryGetValue(userId, out var val) ? val : 0;
+
+    private void SetCustomSplitValue(int userId, string? value)
+    {
+        if (decimal.TryParse(value, out var amount))
+            _customSplitValues[userId] = amount;
+    }
+
+    private async Task AddMember()
+    {
+        if (string.IsNullOrWhiteSpace(_newMemberEmail))
+        { _memberError = "Email is required."; return; }
+
+        var success = await Api.AddMemberAsync(GroupId, _newMemberEmail);
+        if (!success) { _memberError = "User not found or already a member."; return; }
+
+        var groups = await Api.GetGroupsAsync();
+        _group = groups.FirstOrDefault(g => g.Id == GroupId);
+        _newMemberEmail = "";
+        _memberError = "";
+    }
+
+    private double GetPercent(decimal value, decimal max) =>
+        max == 0 ? 0 : (double)(value / max * 100);
+
+    private void SetActiveTab(string tab) => _activeTab = tab;
+    private async Task SetActiveTabAsync(string tab) => await SetTab(tab);
+}

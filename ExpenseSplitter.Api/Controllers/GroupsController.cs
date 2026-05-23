@@ -77,20 +77,45 @@ public class GroupsController : ControllerBase {
     }
 
     [HttpPost("parse-receipt")]
-    public async Task<IActionResult> ParseReceipt([FromForm] IFormFile file) {
-        if (file == null || file.Length == 0) 
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
+    public async Task<IActionResult> ParseReceipt() {
+        if (!Request.HasFormContentType)
+            return BadRequest("Expected multipart form data.");
+
+        var form = await Request.ReadFormAsync();
+
+        var file = form.Files.GetFile("file");
+
+        if (file == null || file.Length == 0)
             return BadRequest("No file provided.");
-        
-        var allowed = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
-        if(!allowed.Contains(file.ContentType.ToLower()))
-            return BadRequest("Only image files are supported.");
+
+        //Detect content type from extenstion if browser didn't send it
+        var contentType = file.ContentType;
+        if(string.IsNullOrEmpty(contentType) || contentType == "application/octet-stream") {
+            var ext = Path.GetExtension(file.FileName).ToLower();
+            contentType = ext switch {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                ".heic" => "image/heic",
+                _ => "application/octet-stream"
+            };
+        }
+
+        var allowed = new[] { "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic" };
+        Console.WriteLine($"Allowed check: '{contentType.ToLower()}' in allowed = {allowed.Contains(contentType.ToLower())}");
+
+        if (!allowed.Contains(contentType.ToLower()))
+            return BadRequest($"Unsupported file type: {contentType}");
 
         if (file.Length > 5 * 1024 * 1024)
             return BadRequest("File must be under 5MB.");
 
         try {
             using var stream = file.OpenReadStream();
-            var result = await _receiptService.ParseReceiptAsync(stream, file.ContentType);
+            var result = await _receiptService.ParseReceiptAsync(stream, contentType);
             return Ok(result);
         }
         catch (Exception ex) {

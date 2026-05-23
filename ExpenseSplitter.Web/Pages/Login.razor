@@ -1,0 +1,115 @@
+@page "/login"
+@page "/register"
+@inject ApiService Api
+@inject JwtAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+@layout EmptyLayout
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
+                <rect x="1" y="1" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+                <rect x="12" y="1" width="9" height="9" rx="2" fill="currentColor" opacity="0.5"/>
+                <rect x="1" y="12" width="9" height="9" rx="2" fill="currentColor" opacity="0.5"/>
+                <rect x="12" y="12" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
+            </svg>
+            <span>Evenly</span>
+        </div>
+
+        <h1>@(_isRegister ? "Create account" : "Welcome back")</h1>
+        <p class="auth-sub">@(_isRegister ? "Start splitting expenses with your group." : "Sign in to your account.")</p>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="auth-error">@_error</div>
+        }
+
+        @if (_isRegister)
+        {
+            <div class="form-field">
+                <label>Name</label>
+                <input @bind="_name" placeholder="Your name" />
+            </div>
+        }
+
+        <div class="form-field">
+            <label>Email</label>
+            <input @bind="_email" type="email" placeholder="you@example.com" />
+        </div>
+
+        <div class="form-field">
+            <label>Password</label>
+            <input @bind="_password" type="password" placeholder="••••••••" />
+        </div>
+
+        <button class="btn-primary" @onclick="Submit" disabled="@_loading">
+            @if (_loading) { <span>Please wait...</span> }
+            else { <span>@(_isRegister ? "Create account" : "Sign in")</span> }
+        </button>
+
+        <div class="auth-switch">
+            @if (_isRegister)
+            {
+                <span>Already have an account?</span>
+                <button @onclick="() => _isRegister = false">Sign in</button>
+            }
+            else
+            {
+                <span>Don't have an account?</span>
+                <button @onclick="() => _isRegister = true">Create one</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isRegister = false;
+    private string _name = "";
+    private string _email = "";
+    private string _password = "";
+    private string _error = "";
+    private bool _loading = false;
+
+    protected override void OnInitialized()
+    {
+        _isRegister = Nav.Uri.Contains("/register");
+    }
+
+    private async Task Submit()
+    {
+        _error = "";
+        _loading = true;
+
+        try
+        {
+            AuthResponse? result;
+
+            if (_isRegister)
+            {
+                if (string.IsNullOrWhiteSpace(_name))
+                { _error = "Name is required."; return; }
+                result = await Api.RegisterAsync(_name, _email, _password);
+            }
+            else
+            {
+                result = await Api.LoginAsync(_email, _password);
+            }
+
+            if (result == null)
+            {
+                _error = _isRegister
+                    ? "Registration failed. Email may already be in use."
+                    : "Invalid email or password.";
+                return;
+            }
+
+            await AuthProvider.LoginAsync(result.Token);
+            Nav.NavigateTo("/");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
