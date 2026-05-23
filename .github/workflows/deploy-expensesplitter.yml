@@ -3,9 +3,6 @@ name: Deploy ExpenseSplitter to GitHub Pages
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'ExpenseSplitter.Web/**'
-      - '.github/workflows/deploy-expensesplitter.yml'
 
 permissions:
   contents: write
