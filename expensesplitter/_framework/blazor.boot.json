@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "ExpenseSplitter.Web",
   "resources": {
-    "hash": "sha256-bN05HxshocxzQUWAUxtFJ1Bq551p+2GKaBAOiOom9dQ=",
+    "hash": "sha256-5gLvdl8jPRD4Rn3ERtYCl3FDJ9JUh4z2XvBnvzCdJCI=",
     "fingerprinting": {
       "Blazored.LocalStorage.441nkrdpqq.wasm": "Blazored.LocalStorage.wasm",
       "Bunit.Core.28v3m6b6kc.wasm": "Bunit.Core.wasm",
@@ -50,7 +50,7 @@
       "System.Text.RegularExpressions.4tjgx8fq2l.wasm": "System.Text.RegularExpressions.wasm",
       "System.Threading.wj0yeppz9b.wasm": "System.Threading.wasm",
       "System.Private.CoreLib.npw3pv98a5.wasm": "System.Private.CoreLib.wasm",
-      "ExpenseSplitter.Web.kcj9bofkty.wasm": "ExpenseSplitter.Web.wasm",
+      "ExpenseSplitter.Web.ehqrmue9qk.wasm": "ExpenseSplitter.Web.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.xsn1d6x2kd.js": "dotnet.native.js",
       "dotnet.native.vz0adxojrz.wasm": "dotnet.native.wasm",
@@ -123,7 +123,7 @@
       "System.Text.Json.xtyp9987u0.wasm": "sha256-a9a87pP7SsXEXiXopvuN4ubY5GFVx/M/iAIdNRR/Qi8=",
       "System.Text.RegularExpressions.4tjgx8fq2l.wasm": "sha256-uOb2n3AZ+FryhcMydIHqhRI4qWR4EoQyc+N1y+YSHwA=",
       "System.Threading.wj0yeppz9b.wasm": "sha256-TFkJp7dYWssbFCxveb8BUOAmOseJ01Vz4EEqw9ul2kY=",
-      "ExpenseSplitter.Web.kcj9bofkty.wasm": "sha256-zPpbmGdLJ/SA1oexJfElwEX1ZVft6ITRaMw8EUB44KA="
+      "ExpenseSplitter.Web.ehqrmue9qk.wasm": "sha256-0uzjH1swy1NVw6bujKnCJQJOFrxWwcKqz3cOoPVWdsE="
     }
   },
   "cacheBootResources": true,
