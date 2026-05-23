@@ -6,7 +6,7 @@
 
 <div class="app-shell">
     <nav class="app-nav">
-        <div class="nav-brand" @onclick='() => Nav.NavigateTo("/")'>
+        <div class="nav-brand" @onclick='() => Nav.NavigateTo("")'>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <rect x="1" y="1" width="9" height="9" rx="2" fill="currentColor" opacity="0.9"/>
                 <rect x="12" y="1" width="9" height="9" rx="2" fill="currentColor" opacity="0.5"/>
@@ -33,6 +33,6 @@
     private async Task Logout()
     {
         await AuthProvider.LogoutAsync();
-        Nav.NavigateTo("/login");
+        Nav.NavigateTo("login");
     }
 }
