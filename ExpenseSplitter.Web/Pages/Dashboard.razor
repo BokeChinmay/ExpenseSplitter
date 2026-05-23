@@ -35,7 +35,7 @@
         <div class="groups-grid">
             @foreach (var group in _groups)
             {
-                <div class="group-card" @onclick='() => Nav.NavigateTo($"/group/{group.Id}")'>
+                <div class="group-card" @onclick='() => Nav.NavigateTo($"group/{group.Id}")'>
                     <div class="group-card-header">
                         <span class="group-name">@group.Name</span>
                         <span class="group-currency">@group.Currency</span>
