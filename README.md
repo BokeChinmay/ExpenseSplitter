@@ -36,7 +36,7 @@ Evenly/
 │   ├── Data/                     # AppDbContext, EF migrations
 │   ├── Models/                   # Domain models, DTOs
 │   └── Services/                 # ExpenseService, DebtSimplificationService,
-│                                 #   ReceiptParsingService, InsightsService, AuthService
+│                                 # ReceiptParsingService, InsightsService, AuthService
 └── ExpenseSplitter.Web/          # Blazor WASM frontend
     ├── Auth/                     # JwtAuthStateProvider
     ├── Models/                   # Client-side DTOs
